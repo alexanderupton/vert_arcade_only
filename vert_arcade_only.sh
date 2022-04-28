@@ -18,7 +18,7 @@
 # You can download the latest version of this script from:
 # https://github.com/alexanderupton/MiSTer-Scripts
 
-# v0.01 : Alexander Upton : 04/24/2021 : Initial Draft
+# v0.01 : Alexander Upton : 04/24/2022 : Initial Draft
 
 # ========= IMMUTABLE ================
 IFS=$'\n'
