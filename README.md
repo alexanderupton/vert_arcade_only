@@ -9,7 +9,12 @@ vert_arcade_only aims to exist as an interim solution for MiSTer users who want 
 - Theypsilon's downloader.sh is called during the update process and is a dependency.
 - - https://github.com/MiSTer-devel/Downloader_MiSTer
 
-  
+#### Q: How to install vert_arcade_only ?<br>
+<pre>wget --no-check-certificate -O /media/fat/Scripts/https://raw.githubusercontent.com/alexanderupton/vert_arcade_only/main/vert_arcade_only.sh
+
+#### Q: How to use vert_arcade_only ?<br>
+After installation to /media/fat/Scripts vert_arcade_only.sh can be executed via shell login.
+
 <pre>vert_arcade_only.sh <option>
 options:
   -s|-setup : Change the default MiSTer menu to display ONLY vertical arcade titles
