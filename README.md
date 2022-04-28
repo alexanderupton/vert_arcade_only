@@ -10,7 +10,7 @@ vert_arcade_only aims to exist as an interim solution for MiSTer users who want 
 - - https://github.com/MiSTer-devel/Downloader_MiSTer
 
 #### Q: How to install vert_arcade_only ?<br>
-<pre>wget --no-check-certificate -O /media/fat/Scripts/https://raw.githubusercontent.com/alexanderupton/vert_arcade_only/main/vert_arcade_only.sh
+<pre>wget --no-check-certificate -O /media/fat/Scripts/https://raw.githubusercontent.com/alexanderupton/vert_arcade_only/main/vert_arcade_only.sh</pre>
 
 #### Q: How to use vert_arcade_only ?<br>
 After installation to /media/fat/Scripts vert_arcade_only.sh can be executed via shell login.
