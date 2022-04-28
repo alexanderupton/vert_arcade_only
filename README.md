@@ -1,6 +1,12 @@
 # vert_arcade_only
-Vertical Menu Manager for the MiSTer FPGA Platform
+Vertical Menu Manager for the MiSTer FPGA Platform. 
 
+vert_arcade_only aims to exist as an interim solution for MiSTer users who want a flat menu for vertically oriented Arcade titles only. Generally users who have their MiSTer hosted in an Arcade cabinet.
+
+- Currently CW an CCW orientations are not discriminated but can be if there's interest.
+- vert_arcade_only.list will be downloaded at runtime as a dependency as some .mra files are not published with the appropiate <rotation> tag.
+
+  
 <pre>vert_arcade_only.sh <option>
 options:
   -s|-setup : Change the default MiSTer menu to display ONLY vertical arcade titles
