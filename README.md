@@ -3,6 +3,11 @@ Vertical Menu Manager for the MiSTer FPGA Platform.
 
 vert_arcade_only aims to exist as an interim solution for MiSTer users who want a flat menu for vertically oriented Arcade titles only. Generally users who have their MiSTer hosted in an Arcade cabinet.
 
+#### Important Usage Notes 
+- vert_arcade_only usage assumes that users cease "direct" usage of downloader.sh or update_all.sh as vert_arcade_only.sh when invoked with "-u" will call out to the defined update tool while managing the vertical arcade structure. 
+- Any execution of downloader.sh or update_all.sh after the initial 10 second delay will result in either tool redownloading the entire _Arcade, _Console, _Computer, _Utility, and _Other directory structure again.
+- update_all.sh users can still make use of the text based menu to make changes to the respective .ini files but should exit when done and not let the download begin.
+- Users who wish to return to standard MiSTer menu operation can do so with the "-r" option
 - Currently CW an CCW orientations are not discriminated but can be if there's interest.
   Hoping more cores adopt a CW,CCW rotate option in the future.
 - vert_arcade_only.list will be downloaded at runtime as a dependency as some .mra files are not published with a rotation tag.
