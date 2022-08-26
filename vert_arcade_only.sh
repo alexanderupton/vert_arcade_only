@@ -1,6 +1,16 @@
 #!/bin/bash
 # vert_arcade_only.sh : v0.01 : Alexander Upton : 04/24/2022
 
+# vert_arcade_only.sh : v0.02 : Alexander Upton : 08/26/2022
+# Changes:
+# - List cleanup
+# - Added a ".Most Recent" directory on the front menu that lists
+#   the most recent 25 Arcade titles that have been updated after
+#   each update.
+# - Added "-mr <number>" execution to control the number of ganes the
+#  ".Most Recent" directory will contain. Default is 25.
+# - Added .ini support to support override of "CONFIGURABLE" variables.
+
 # Copyright (c) 2022 Alexander Upton <alex.upton@gmail.com>
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +28,7 @@
 # You can download the latest version of this script from:
 # https://github.com/alexanderupton/MiSTer-Scripts
 
-# v0.01 : Alexander Upton : 04/24/2022 : Initial Draft
+# v0.01 : Alexander Upton : 04/24/2021 : Initial Draft
 
 # ========= IMMUTABLE ================
 IFS=$'\n'
@@ -26,11 +36,27 @@ OIFS="$IFS"
 SWITCH="${1}"
 OPTION="${2}"
 
+if [ "${SWITCH}" == "-v" ]; then
+ export MKDIR_OPT="-pv"
+ export LN_OPT="-sfv"
+else
+ export MKDIR_OPT="-p"
+ export LN_OPT="-sf"
+fi
+
+
 # ======== CONFIGURABLE ==============
 MEDIA_ROOT="/media/fat"
 MISTER_UPDATER="${MEDIA_ROOT}/Scripts/downloader.sh"
 REBOOT="false"
-COUNTDOWN_TIME=15
+COUNTDOWN_TIME="15"
+MRA_PATH="/media/fat"
+MRA_RECENT_DIR="${MRA_PATH}/_.Most Recent"
+
+if [ -s "${MEDIA_ROOT}/Scripts/vert_arcade_only.ini" ]; then
+ echo; echo "vert_arcade_only.sh : Using ${MEDIA_ROOT}/Scripts/vert_arcade_only.ini"
+ . "${MEDIA_ROOT}/Scripts/vert_arcade_only.ini"
+fi
 
 # ========= USAGE ====================
 USAGE(){
@@ -142,7 +168,7 @@ if [ -d ${MEDIA_ROOT}/Arcade ]; then
 
  if [ -f ${MEDIA_ROOT}/Scripts/vert_arcade_only.list ]; then
   cd ${MEDIA_ROOT}
-  for mra in $(cat ${MEDIA_ROOT}/Scripts/vert_arcade_only.list); do
+  for mra in $(sort -u ${MEDIA_ROOT}/Scripts/vert_arcade_only.list); do
    if [ -f "${MEDIA_ROOT}"/Arcade/${mra}.mra ]; then
     echo "Processing: ${mra}.mra"
     if [[ ! -L "${MEDIA_ROOT}"/${mra}.mra ]]; then
@@ -246,15 +272,58 @@ COUNTDOWN
 reboot
 }
 
+MOST_RECENT() {
+[[ ! -d "${MRA_RECENT_DIR}" ]] && mkdir ${MKDIR_OPT} "${MRA_RECENT_DIR}"
+[[ ! -L ${MRA_RECENT_DIR}/cores ]] && ln -sf ${MEDIA_ROOT}/Arcade/cores ${MRA_RECENT_DIR}/cores
+
+OPTION_RE='^[0-9]+$'
+
+[[ ${OPTION} =~ ${OPTION_RE} ]] && MRA_RECENT_LEN=${OPTION} || MRA_RECENT_LEN="25"
+
+LAST_25_MRA=$(ls -tr ${MRA_PATH}/*.mra | tail -${MRA_RECENT_LEN})
+
+for MRA in ${LAST_25_MRA}; do
+ LAST_25_MRA_LIST="${LAST_25_MRA_LIST} ${MRA}"
+ if [ -L "${MRA}" ]; then
+  MRA_NAME=$(basename ${MRA})
+  MFG_NAME=$(sed -ne '/manufacturer/{s/.*<manufacturer>\(.*\)<\/manufacturer>.*/\1/p;q;}' ${MRA} | awk -F\( {'print $1'})
+  CORE_NAME=$(sed -ne '/rbf/{s/.*<rbf>\(.*\)<\/rbf>.*/\1/p;q;}' ${MRA} | awk -F\( {'print $1'})
+  echo "Processing: ${MRA_NAME} - Manufacturer: ${MFG_NAME} - Core: ${CORE_NAME}"
+
+  if [ ! -L "${MRA_RECENT_DIR}/${MRA_NAME}" ]; then
+    ln ${LN_OPT} ${MRA} "${MRA_RECENT_DIR}/${MRA_NAME}"
+  fi
+
+ fi
+  unset MRA MRA_NAME MFG_NAME CORE_NAME
+done
+
+for MRA in ${MRA_RECENT_DIR}/*; do
+ if [ ${MRA} == "*.mra" ]; then
+  MRA_NAME=$(basename ${MRA})
+  if ! echo ${LAST_25_MRA_LIST} | grep -q "${MRA_NAME}"; then
+   rm -fv ${MRA} | logger -t vert_arcade_only.sh
+  fi
+ #else
+ # basename "${MRA}"
+ fi
+done
+
+}
+
 case ${SWITCH} in
  -u|-update)
   UPDATE
-  MRA_SETUP ;;
+  MRA_SETUP 
+  MOST_RECENT ;;
  -s|-setup) 
   DEFAULT_MOVE_SETUP
   CORE_SETUP
-  MRA_SETUP ;;
+  MRA_SETUP
+  MOST_RECENT ;;
  -r|-rollback)
   ROLLBACK ;;
+ -mr)
+  MOST_RECENT ;;
  *) USAGE ;;
 esac
