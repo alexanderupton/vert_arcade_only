@@ -109,14 +109,27 @@ COUNTDOWN() {
  done
 }
 
+DOWNLOADER_INI_FILTER(){
+ if [ -f ${MEDIA_ROOT}/downloader.ini ]; then
+  FILTER=$(awk -F "= " '/filter/ {print $2}' ${MEDIA_ROOT}/downloader.ini)
+  if [ "${FILTER}" != \"arcade-cores\" ]; then
+   echo "Adding arcade-cores filter to ${MEDIA_ROOT}/downloader.ini"
+   echo '[mister]
+filter = "arcade-cores"' >> ${MEDIA_ROOT}/downloader.ini
+  fi
+ echo "arcade-cores filter set in ${MEDIA_ROOT}/downloader.ini"
+ fi
+}
+
 DEFAULT_MOVE_SETUP(){
-echo;echo "Sequence:
+echo;echo;echo "Sequence:
 - Rename default directory structure to prevent display in menu 
 - Scan Arcade root level .mra files for vertical rotation (cw,ccw)
 - Create symlinks to all detected and known vertical Arcade titles
 - Create symlinks to supporting Arcade cores
 - Reboot
 -"
+sleep 1
 
 echo;export COUNTDOWN_MSG="Building MiSTer Vertical Menu"
 COUNTDOWN
@@ -313,10 +326,12 @@ done
 
 case ${SWITCH} in
  -u|-update)
+  DOWNLOADER_INI_FILTER
   UPDATE
   MRA_SETUP 
   MOST_RECENT ;;
- -s|-setup) 
+ -s|-setup)
+  DOWNLOADER_INI_FILTER 
   DEFAULT_MOVE_SETUP
   CORE_SETUP
   MRA_SETUP
