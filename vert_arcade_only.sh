@@ -11,6 +11,11 @@
 #  ".Most Recent" directory will contain. Default is 25.
 # - Added .ini support to support override of "CONFIGURABLE" variables.
 
+# vert_arcade_only.sh : v0.03 : Alexander Upton : 10/08/2022
+# Changes:
+# - Added support for [mister] arcade-cores filtering to downloader.ini
+#  to prevent download and update of non-arcade MiSTer cores.
+
 # Copyright (c) 2022 Alexander Upton <alex.upton@gmail.com>
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
