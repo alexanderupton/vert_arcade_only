@@ -124,6 +124,14 @@ filter = "arcade-cores"' >> ${MEDIA_ROOT}/downloader.ini
   fi
  echo "arcade-cores filter set in ${MEDIA_ROOT}/downloader.ini"
  fi
+
+ if [ -f ${MEDIA_ROOT}/Scripts/update_all.ini ]; then
+  AUTO_REBOOT=$(awk -F "= " '/AUTOREBOOT/ {print $2}' ${MEDIA_ROOT}/Scripts/update_all.ini)
+  if [ "${AUTO_REBOOT}" != \"false\" ]; then
+   sed -i 's/AUTOREBOOT="true"/AUTOREBOOT="false"/g' ${MEDIA_ROOT}/Scripts/update_all.ini
+  fi
+ fi
+
 }
 
 DEFAULT_MOVE_SETUP(){
