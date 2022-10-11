@@ -1,6 +1,7 @@
 #!/bin/bash
 # vert_arcade_only.sh : v0.01 : Alexander Upton : 04/24/2022
-
+# Release: v0.01 : Alexander Upton : 04/24/2021 : Initial Draft
+#
 # vert_arcade_only.sh : v0.02 : Alexander Upton : 08/26/2022
 # Changes:
 # - List cleanup
@@ -16,6 +17,14 @@
 # - Added support for [mister] arcade-cores filtering to downloader.ini
 #  to prevent download and update of non-arcade MiSTer cores.
 
+# vert_arcade_only.sh : v0.04 : Alexander Upton : 10/11/2022
+# Changes:
+# - Cleaned up support for [mister] arcade-cores filtering to downloader.ini
+#  to preserve existing [mister] filters.
+# - Improved validation of existing MiSTer framework state during -s[etup] to
+#  call update_all.sh in the event a user is starting from an SD card created
+#  through Mr. Fusion or similar imaging utilities with no further setup.
+#
 # Copyright (c) 2022 Alexander Upton <alex.upton@gmail.com>
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,8 +41,6 @@
 
 # You can download the latest version of this script from:
 # https://github.com/alexanderupton/MiSTer-Scripts
-
-# v0.01 : Alexander Upton : 04/24/2021 : Initial Draft
 
 # ========= IMMUTABLE ================
 IFS=$'\n'
@@ -71,9 +78,11 @@ USAGE(){
  echo "  -s|-setup : Change the default MiSTer menu to display ONLY vertical arcade titles"
  echo "  -r|-rollback : Revert back to the default MiSTer root menu structure"
  echo "  -u|-update : Update MiSTer and retain vertical arcade menu changes" 
+ echo "  -mr|-mostrecent : Scan for recently updated Arcade titles and make them available in the '.Most Recent' menu" 
  echo
  echo "example:"
- echo "     ./vert_arcade_only.sh -u"
+ echo "     Check for MiSTer updates: vert_arcade_only.sh -u"
+ echo "     Add 75 most recent Arcade titles to the '.Most Recent' menu: vert_arcade_only.sh -mr 75"
  echo
  exit 0
 }
@@ -115,15 +124,32 @@ COUNTDOWN() {
 }
 
 DOWNLOADER_INI_FILTER(){
- if [ -f ${MEDIA_ROOT}/downloader.ini ]; then
-  FILTER=$(awk -F "= " '/filter/ {print $2}' ${MEDIA_ROOT}/downloader.ini)
-  if [ "${FILTER}" != \"arcade-cores\" ]; then
-   echo "Adding arcade-cores filter to ${MEDIA_ROOT}/downloader.ini"
-   echo '[mister]
+APPLY_FILTER(){
+echo '[mister]
 filter = "arcade-cores"' >> ${MEDIA_ROOT}/downloader.ini
+}
+
+ FILTER="arcade-cores"
+ if [ -f ${MEDIA_ROOT}/downloader.ini ]; then
+  if grep -q "arcade-cores" ${MEDIA_ROOT}/downloader.ini; then
+   echo "arcade-cores [mister] filter set in ${MEDIA_ROOT}/downloader.ini"
+  else
+   if grep -q filter ${MEDIA_ROOT}/downloader.ini; then
+    MISTER_FILTER=$(grep '\[mister\]' -A1 ../downloader.ini |grep -v mister | awk -F= {'print $2'} | awk -F\" {'print $2'})
+    NEW_FILTER="${FILTER} ${MISTER_FILTER}"
+    sed -iv "s|${MISTER_FILTER}|${NEW_FILTER}|g" ${MEDIA_ROOT}/downloader.ini
+   else
+    APPLY_FILTER
+   fi
   fi
- echo "arcade-cores filter set in ${MEDIA_ROOT}/downloader.ini"
+else
+ APPLY_FILTER
+ if [ "$?" == "0" ]; then
+  echo "Adding arcade-cores filter to ${MEDIA_ROOT}/downloader.ini"
+ else
+  echo "Failed to write to ${MEDIA_ROOT}/downloader.ini"
  fi
+fi
 
  if [ -f ${MEDIA_ROOT}/Scripts/update_all.ini ]; then
   AUTO_REBOOT=$(awk -F "= " '/AUTOREBOOT/ {print $2}' ${MEDIA_ROOT}/Scripts/update_all.ini)
@@ -144,8 +170,18 @@ echo;echo;echo "Sequence:
 -"
 sleep 1
 
-echo;export COUNTDOWN_MSG="Building MiSTer Vertical Menu"
-COUNTDOWN
+# Checking if any previous MiSTer installation exists when invoking setup.
+[[ -d "/media/fat/Arcade" ]] && EXISTING="1" || EXISTING="0"
+[[ -d "/media/fat/_Arcade" ]] && EXISTING_="1" || EXISTING_="0"
+EXISTING_STATE=$(( "${EXISTING}" + "${EXISTING_}" ))
+
+if [[ "${EXISTING_STATE}" > "0" ]]; then
+ echo;export COUNTDOWN_MSG="Building MiSTer Vertical Menu"
+ COUNTDOWN
+else
+ echo "Looks like this is a new MiSTer setup. Updating via update_all.sh"
+ UPDATE
+fi
 
 echo;echo "Building MiSTer Vertical Arcade Menu."
 unset IFS OIFS
@@ -304,7 +340,21 @@ MOST_RECENT() {
 
 OPTION_RE='^[0-9]+$'
 
-[[ ${OPTION} =~ ${OPTION_RE} ]] && MRA_RECENT_LEN=${OPTION} || MRA_RECENT_LEN="25"
+if [[ ${MRA_RECENT_LEN} =~ ${OPTION_RE} ]]; then
+ if [[ ${OPTION} =~ ${OPTION_RE} ]]; then
+  echo "vert_arcade_only.sh : Overriding MRA_RECENT_LEN value in vert_arcade_only.ini with -mr value "${OPTION}""
+  MRA_RECENT_LEN=${OPTION}
+ else
+  echo "Using MRA_RECENT_LEN value of ""${MRA_RECENT_LEN}"" from vert_arcade_only.ini"
+ fi
+else
+ if [[ ${OPTION} =~ ${OPTION_RE} ]]; then
+  MRA_RECENT_LEN="${OPTION}"
+ else
+  echo "Defaulting '.Most Recent' list to 50"
+  MRA_RECENT_LEN="50"
+ fi
+fi
 
 LAST_25_MRA=$(ls -tr ${MRA_PATH}/*.mra | tail -${MRA_RECENT_LEN})
 
@@ -330,8 +380,6 @@ for MRA in ${MRA_RECENT_DIR}/*; do
   if ! echo ${LAST_25_MRA_LIST} | grep -q "${MRA_NAME}"; then
    rm -fv ${MRA} | logger -t vert_arcade_only.sh
   fi
- #else
- # basename "${MRA}"
  fi
 done
 
@@ -342,18 +390,17 @@ case ${SWITCH} in
   DOWNLOADER_INI_FILTER
   UPDATE
   MRA_SETUP
-  CORE_SETUP
+  CORE_SETUP 
   MOST_RECENT ;;
  -s|-setup)
   DOWNLOADER_INI_FILTER 
   DEFAULT_MOVE_SETUP
   CORE_SETUP
   MRA_SETUP
-  CORE_SETUP
   MOST_RECENT ;;
  -r|-rollback)
   ROLLBACK ;;
- -mr)
+ -mr|-mostrecent)
   MOST_RECENT ;;
  *) USAGE ;;
 esac
