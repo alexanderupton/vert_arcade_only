@@ -75,8 +75,9 @@ USAGE(){
  echo
  echo "vert_arcade_only.sh <option>"
  echo "options:"
- echo "  -s|-setup : Change the default MiSTer menu to display ONLY vertical arcade titles"
- echo "  -r|-rollback : Revert back to the default MiSTer root menu structure"
+ echo "  -f|-favorites : Build a top-level .Favorites menu from vert_arcade_only.favorites"
+ echo "  -i|-install : Change the default MiSTer menu to display ONLY vertical arcade titles"
+ echo "  -r|-remove : Revert back to the default MiSTer root menu structure"
  echo "  -u|-update : Update MiSTer and retain vertical arcade menu changes" 
  echo "  -mr|-mostrecent : Scan for recently updated Arcade titles and make them available in the '.Most Recent' menu" 
  echo
@@ -195,32 +196,76 @@ done
 export REBOOT="true"
 }
 
+FAVORITES_SETUP(){
+ if [ -f ${MEDIA_ROOT}/Scripts/vert_arcade_only.favorites ]; then
+  [[ ! -d "${MEDIA_ROOT}/_.Favorites/_.Alternatives" ]] && mkdir -p "${MEDIA_ROOT}/_.Favorites/_.Alternatives"
+  [[ ! -L "${MEDIA_ROOT}/_.Favorites/cores" ]] && ln -sf "${MEDIA_ROOT}/Arcade/cores" "${MEDIA_ROOT}/_.Favorites/cores"
+  cd ${MEDIA_ROOT}
+  for mra in $(sort -u ${MEDIA_ROOT}/Scripts/vert_arcade_only.favorites); do
+   if [ -f "${MEDIA_ROOT}/Arcade/${mra}.mra" ]; then
+    BASEMRA=$(basename ${mra})
+    MRA_NAME=$(basename ${mra})
+    MRA_RAW=$(echo ${MRA_NAME} | awk -F. {'print $1'})
+    MRA_ROOT_STRIP=$(echo "${mra}" | sed 's|\/media\/fat\/||'g)
+    echo "Favoriting: ${mra}.mra"
+    if [[ ! -L "${MEDIA_ROOT}/_.Favorites/${mra}.mra" ]]; then
+     ln -sf "${MEDIA_ROOT}/Arcade/${mra}".mra "${MEDIA_ROOT}/_.Favorites/${mra}".mra
+    fi
+   fi
+
+   if [ -d "${MEDIA_ROOT}/Arcade/_alternatives/_${MRA_RAW}" ]; then
+    echo "Favoriting: Alternate versions of ${MRA_RAW}"
+    ln -sf "${MEDIA_ROOT}/Arcade/_alternatives/_${MRA_RAW}" "${MEDIA_ROOT}/_.Favorites/_.Alternatives/_${MRA_RAW}"
+   fi
+
+  done
+
+ fi
+ 
+ if [ -d "${MEDIA_ROOT}/Favorites.old" ]; then
+  for mra in $(ls ${MEDIA_ROOT}/Favorites.old); do
+   if [ -f "${MEDIA_ROOT}"/Arcade/${mra} ]; then
+    BASEMRA=$(basename ${mra})
+    MRA_NAME=$(basename ${mra})
+    MRA_RAW=$(echo ${MRA_NAME} | awk -F. {'print $1'})
+    MRA_ROOT_STRIP=$(echo "${mra}" | sed 's|\/media\/fat\/||'g)
+    echo "Favoriting: ${mra}"
+    if [[ ! -L "${MEDIA_ROOT}"/_.Favorites/${mra} ]]; then
+     ln -sf "${MEDIA_ROOT}/Arcade/${mra}" "${MEDIA_ROOT}/_.Favorites/${mra}"
+    fi
+   fi
+  done
+ fi
+}
+
 MRA_SETUP(){
 IFS=$'\n'
 OIFS="$IFS"
 echo "Scanning MiSTer .mra files for vertical orientation"
 if [ -d ${MEDIA_ROOT}/Arcade ]; then
+ [[ ! -d "${MEDIA_ROOT}/_.Alternatives" ]] && mkdir -p "${MEDIA_ROOT}/_.Alternatives"
+ [[ ! -L "${MEDIA_ROOT}/_.Alternatives/cores" ]] && ln -sf "${MEDIA_ROOT}/Arcade/cores" "${MEDIA_ROOT}/_.Alternatives/cores"
  for mra in "${MEDIA_ROOT}"/Arcade/*.mra ; do
   BASEMRA=$(basename ${mra})
   if grep -q rotation\>vertical ${mra}; then
-   echo "Processing: ${BASEMRA}"
    cd ${MEDIA_ROOT}
    MRA_NAME=$(basename ${mra})
    MRA_RAW=$(echo ${MRA_NAME} | awk -F. {'print $1'})
    MRA_ROOT_STRIP=$(echo "${mra}" | sed 's|\/media\/fat\/||'g)
  
    if [ -f "${mra}" ]; then
-    [[ ! -L "./${MRA_NAME}" ]] && ln -sf "${MRA_ROOT_STRIP}" ./"${MRA_NAME}"
+    echo "Processing: ${BASEMRA}"
+    [[ ! -L "./${MRA_NAME}" ]] && ln -sf "${mra}" ./"${MRA_NAME}"
+    #[[ ! -L "./${MRA_NAME}" ]] && ln -sf "${MRA_ROOT_STRIP}" ./"${MRA_NAME}"
    else
     echo "BAD-${MRA_PATH}"
    fi
 
-   if [ -d "Arcade/_alternatives/_${MRA_RAW}" ]; then
-    echo "Setup Alternative versions of ${MRA_RAW}"
-    [[ ! -L "./_${MRA_RAW}" ]] && ln -sf "Arcade/_alternatives/_${MRA_RAW}" "_${MRA_RAW}"
-    [[ ! -L "./_${MRA_RAW}/cores" ]] && ln -sf "${MEDIA_ROOT}/Arcade/cores" "_${MRA_RAW}/cores"
+   if [ -d "${MEDIA_ROOT}/Arcade/_alternatives/_${MRA_RAW}" ]; then
+    echo "Processing: Alternate versions of ${MRA_RAW}"
+    ln -sf "${MEDIA_ROOT}/Arcade/_alternatives/_${MRA_RAW}" "${MEDIA_ROOT}/_.Alternatives/_${MRA_RAW}"
    fi
-   
+
   fi
  done
  
@@ -231,17 +276,17 @@ if [ -d ${MEDIA_ROOT}/Arcade ]; then
  if [ -f ${MEDIA_ROOT}/Scripts/vert_arcade_only.list ]; then
   cd ${MEDIA_ROOT}
   for mra in $(sort -u ${MEDIA_ROOT}/Scripts/vert_arcade_only.list); do
-   if [ -f "${MEDIA_ROOT}"/Arcade/${mra}.mra ]; then
+   if [ -f "${MEDIA_ROOT}/Arcade/${mra}.mra" ]; then
     echo "Processing: ${mra}.mra"
-    if [[ ! -L "${MEDIA_ROOT}"/${mra}.mra ]]; then
+    if [[ ! -L "${MEDIA_ROOT}/${mra}.mra" ]]; then
      ln -sf Arcade/"${mra}".mra "${mra}".mra
     fi
    fi
 
-   if [ -d "Arcade/_alternatives/_${mra}" ]; then
-    echo "Setup alternative versions of "${mra}" "
-    ln -sf "Arcade/_alternatives/_${mra}" "_${mra}"
-    ln -sf "${MEDIA_ROOT}/Arcade/cores" "_${mra}/cores"
+   if [ -d "${MEDIA_ROOT}/Arcade/_alternatives/_${mra}" ]; then
+    echo "Processing: Alternate versions of ${mra}"
+    ln -sf "${MEDIA_ROOT}/Arcade/_alternatives/_${mra}" "${MEDIA_ROOT}/_.Alternatives/_${mra}"
+    ln -sf "${MEDIA_ROOT}/Arcade/cores" "${MEDIA_ROOT}/_.Alternatives/_${mra}/cores"
    fi
 
   done
@@ -265,6 +310,17 @@ if [[ ! -L ${MEDIA_ROOT}/cores ]]; then
 fi
 }
 
+FAVORITES_CHECK(){
+if [[ -f ${MEDIA_ROOT}/Scripts/favorites.sh ]]; then
+ [[ -L ${MEDIA_ROOT}/cores ]] && rm -f ${MEDIA_ROOT}/cores
+fi
+
+if [ -d "${MEDIA_ROOT}/_Favorites" ]; then
+ [[ -L ${MEDIA_ROOT}/_Favorites/cores ]] && rm -f ${MEDIA_ROOT}/_Favorites/cores
+ mv ${MEDIA_ROOT}/_Favorites ${MEDIA_ROOT}/Favorites.old
+fi
+}
+
 UPDATE(){
 if [ ! -f "${MISTER_UPDATER}" ]; then
  echo;echo "Fail: 
@@ -279,9 +335,7 @@ COUNTDOWN
 
 echo;echo "Sequence:
 - Restore default _Arcade _Console _Computer _Utility _Other directory structure
-- Remove all symlinks from ${MEDIA_ROOT}
--
-"
+- Remove all symlinks from ${MEDIA_ROOT}"
 
 cd ${MEDIA_ROOT}
 unset IFS OIFS
@@ -307,8 +361,7 @@ ROLLBACK(){
 echo;echo "Sequence:
 - Restore default _Arcade _Console _Computer _Utility _Other directory structure
 - Remove all symlinks from ${MEDIA_ROOT}
-- Reboot
-"
+- Reboot"
 
 echo;export COUNTDOWN_MSG="Restoring default MiSTer menu"
 COUNTDOWN
@@ -342,10 +395,10 @@ OPTION_RE='^[0-9]+$'
 
 if [[ ${MRA_RECENT_LEN} =~ ${OPTION_RE} ]]; then
  if [[ ${OPTION} =~ ${OPTION_RE} ]]; then
-  echo "vert_arcade_only.sh : Overriding MRA_RECENT_LEN value in vert_arcade_only.ini with -mr value "${OPTION}""
+  echo "vert_arcade_only.sh : Overriding MRA_RECENT_LEN value in vert_arcade_only.ini with -mr value ${OPTION}"
   MRA_RECENT_LEN=${OPTION}
  else
-  echo "Using MRA_RECENT_LEN value of ""${MRA_RECENT_LEN}"" from vert_arcade_only.ini"
+  echo "Using MRA_RECENT_LEN value of ${MRA_RECENT_LEN} from vert_arcade_only.ini"
  fi
 else
  if [[ ${OPTION} =~ ${OPTION_RE} ]]; then
@@ -389,17 +442,23 @@ case ${SWITCH} in
  -u|-update)
   DOWNLOADER_INI_FILTER
   UPDATE
+  FAVORITES_CHECK
   MRA_SETUP
   CORE_SETUP 
-  MOST_RECENT ;;
- -s|-setup)
+  MOST_RECENT
+  FAVORITES_SETUP ;;
+ -i|-install)
   DOWNLOADER_INI_FILTER 
   DEFAULT_MOVE_SETUP
+  FAVORITES_CHECK
   CORE_SETUP
   MRA_SETUP
-  MOST_RECENT ;;
- -r|-rollback)
+  MOST_RECENT
+  FAVORITES_SETUP ;;
+ -r|-remove)
   ROLLBACK ;;
+ -f|-favorites)
+  FAVORITES_SETUP ;;
  -mr|-mostrecent)
   MOST_RECENT ;;
  *) USAGE ;;
