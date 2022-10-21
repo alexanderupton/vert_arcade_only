@@ -23,7 +23,7 @@
 export SCRIPTS_DIR="/media/fat/Scripts"
 
 DOWNLOAD(){
-FILES="vert_arcade_only.sh vert_arcade_only.ini vert_arcade_only.update vert_arcade_only.favorites"
+FILES="vert_arcade_only.sh vert_arcade_only.ini vert_arcade_only_update.sh vert_arcade_only.favorites"
 
 for FILE in ${FILES}; do
 
@@ -44,16 +44,16 @@ done
 }
 
 INSTALL(){
-if [ -f "${SCRIPTS_DIR}/vert_arcade_only.update" ]; then
+if [ -f "${SCRIPTS_DIR}/vert_arcade_only_update.sh" ]; then
  echo "Update via MiSTer Scripts UI is setup"
 else
- echo "${SCRIPTS_DIR}/vert_arcade_only.update is required for base operation. Check Internet connection"
+ echo "${SCRIPTS_DIR}/vert_arcade_only_update.sh is required for base operation. Check Internet connection"
  exit 1
 fi
 
 if [ -f "${SCRIPTS_DIR}/vert_arcade_only.ini" ]; then
  echo "Installing with the following default options:"
- cat vert_arcade_only.ini
+ cat ${SCRIPTS_DIR}/vert_arcade_only.ini
 else
  echo "${SCRIPTS_DIR}/vert_arcade_only.ini is required for base operation. Check Internet connection"
  exit 1
