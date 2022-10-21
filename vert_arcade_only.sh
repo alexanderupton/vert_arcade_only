@@ -468,7 +468,17 @@ else
  fi
 fi
 
-RECENT_MRA=$(ls -tr ${MRA_PATH}/*.mra | tail -${MRA_RECENT_LEN})
+#RECENT_MRA=$(ls -tr ${MRA_PATH}/*.mra | tail -${MRA_RECENT_LEN})
+
+RECENT_MRA=$(for mra in $(ls -tr /media/fat/_Arcade/*.mra); do
+ if grep -q rotation\>vertical ${mra}; then
+  echo $mra
+ fi
+done | tail -${MRA_RECENT_LEN})
+
+#for i in ${ML_LIST}; do
+# echo $i
+#done
 
 for MRA in ${RECENT_MRA}; do
  RECENT_MRA_LIST="${RECENT_MRA_LIST} ${MRA}"
