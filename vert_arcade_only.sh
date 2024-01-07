@@ -293,7 +293,7 @@ if [ -d ${ARCADE_DIR} ]; then
  [[ ! -L "${ALT_DIR}/cores" ]] && ln -sf "${ARCADE_DIR}/cores" "${ALT_DIR}/cores"
  for mra in ${ARCADE_DIR}/*.mra ; do
   BASEMRA=$(basename ${mra})
-  if grep -q rotation\>vertical ${mra}; then
+  if grep -qi rotation\>vertical ${mra}; then
    cd ${LINK_ROOT}
    MRA_NAME=$(basename ${mra})
    MRA_RAW=$(echo ${MRA_NAME} | awk -F. {'print $1'})
@@ -471,7 +471,7 @@ fi
 #RECENT_MRA=$(ls -tr ${MRA_PATH}/*.mra | tail -${MRA_RECENT_LEN})
 
 RECENT_MRA=$(for mra in $(ls -tr ${MRA_PATH}/*.mra); do
- if grep -q rotation\>vertical ${mra}; then
+ if grep -qi rotation\>vertical ${mra}; then
   echo $mra
  fi
 done | tail -${MRA_RECENT_LEN})
